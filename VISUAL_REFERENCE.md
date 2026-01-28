@@ -1,5 +1,36 @@
 # SKAI Computation Visibility - Visual Reference
 
+## ✨ Updated: Now Integrated into Progress Card
+
+The 3-layer visibility system is now **prominently displayed inside the SKAI Analysis Progress card** for maximum visibility during analysis. No scrolling required!
+
+### Current Placement (As of Latest Update)
+
+The visibility system appears inside `#skai-progress-indicator` (the SKAI Analysis Progress card), integrated with the existing progress interface:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ SKAI ANALYSIS PROGRESS CARD                                   │
+├──────────────────────────────────────────────────────────────┤
+│ Auto-Tune Badge | Progress Steps (traffic lights)            │
+│ ● ○ ○ ○ ○ ○                                                  │
+│ Current Stage Message                                         │
+│ Training 45/90... (ETA 2m 15s)                               │
+├──────────────────────────────────────────────────────────────┤
+│ ═══════════════ 3-LAYER VISIBILITY ════════════════          │
+│                                                               │
+│ Layer 1: Training neural network - seed 1337 (45/90 epochs) │
+│ Layer 2: Batches: 142 | Operations: 3,482,119               │
+│ Layer 3: [Completion summaries as phases finish]            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Benefits of This Placement:**
+- ✅ Highly visible - appears in main progress card
+- ✅ No scrolling needed during analysis
+- ✅ Groups all progress information together
+- ✅ Professional separator visually distinguishes sections
+
 ## Before vs After
 
 ### BEFORE (Original System)

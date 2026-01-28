@@ -4,21 +4,25 @@
 
 This system provides real-time transparency into SKAI lottery analysis computations without using percentages. All metrics are tied directly to actual work being performed.
 
-## UI Layout
+**✨ Important:** The 3-layer visibility system is now **integrated directly into the SKAI Analysis Progress card** (`#skai-progress-indicator`) for maximum prominence and visibility during analysis.
+
+## UI Layout - Integrated in Progress Card
+
+The visibility system appears inside the SKAI Analysis Progress card, making it highly visible without scrolling:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ SKAI Progress Bar (existing - augmented, not replaced)      │
-│ ████████████████░░░░░░░░░░░░░ 62%                          │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
+│ SKAI ANALYSIS PROGRESS CARD                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Progress Steps | Auto-Tune Badge                             │
+│ Training Status: Training 45/90... (ETA 2m 15s)             │
+├─────────────────────────────────────────────────────────────┤
+│ ═══ 3-LAYER COMPUTATION VISIBILITY (integrated) ═══         │
+├─────────────────────────────────────────────────────────────┤
 │ LAYER 1: DYNAMIC STATUS (what's happening now)              │
 │                                                              │
 │ Building training samples - Window size: 50 draws           │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
+├─────────────────────────────────────────────────────────────┤
 │ LAYER 2: LIVE COUNTERS (real work metrics)                  │
 │                                                              │
 │ Draws analyzed: 458 / 500                                   │
@@ -26,9 +30,7 @@ This system provides real-time transparency into SKAI lottery analysis computati
 │ Pairwise comparisons: 287,420                               │
 │ Batches processed: 142                                      │
 │ Total computations: 3,482,119                               │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
+├─────────────────────────────────────────────────────────────┤
 │ LAYER 3: PHASE SUMMARIES (what changed)                     │
 │                                                              │
 │ ┌───────────────────────────────────────────────────────┐  │
@@ -46,6 +48,12 @@ This system provides real-time transparency into SKAI lottery analysis computati
 │ └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Placement Benefits:**
+- More prominent - inside main progress card
+- No scrolling required during analysis  
+- Better visual grouping with progress information
+- Professional separator (border-top) distinguishes sections
 
 ## Layer 1: Dynamic Status Line
 
