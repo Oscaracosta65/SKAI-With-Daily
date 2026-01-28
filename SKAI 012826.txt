@@ -24008,19 +24008,24 @@ window.SKAI_runExtra = function runExtraBallML(settings) {
 
         var topAll  = Array.isArray(window.SKAI_TOP_MAIN)  ? window.SKAI_TOP_MAIN  : [];
         var topXAll = Array.isArray(window.SKAI_TOP_EXTRA) ? window.SKAI_TOP_EXTRA : [];
-// Always render the correct number of main picks for the game (Pick 3 = 3, Pick 4 = 4, etc.)
+
 var meta = window.SKAI_META || {};
 var pickMain = parseInt(meta.pick, 10);
 
 // Safety fallback (only if meta.pick is missing)
 if (!pickMain || pickMain < 1) { pickMain = 5; }
 
-// Keep top-limit controls available for other modules, but do NOT let them change the main pick count
+// Keep top-limit controls available for other modules
 var limit = (typeof window.SKAI_getTopLimit === 'function') ? window.SKAI_getTopLimit() : 20;
 if (!limit || limit < 1) { limit = 20; }
 
-// Main display must always be exact pick size
-var top  = topAll.slice(0, pickMain);
+// Detect daily digit games (domain 0-9, pick 1-4) vs regular lotteries (pick 5+)
+var domainMain = (meta && isFinite(+meta.domain) && +meta.domain > 0) ? (+meta.domain|0) : 99;
+var isDailyGame = (domainMain > 0 && domainMain <= 9 && pickMain >= 1 && pickMain <= 4);
+
+// Daily games (Pick 1-4): render exact pick size
+// Regular lotteries (Pick 5+): render top 20 results
+var top = isDailyGame ? topAll.slice(0, pickMain) : topAll.slice(0, limit);
 
 // Extra balls: only render if the game actually has an extra ball
 var hasExtra = !!meta.hasExtraBall;
