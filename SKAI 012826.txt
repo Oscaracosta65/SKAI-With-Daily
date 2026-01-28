@@ -11642,23 +11642,23 @@ function SKAI_requireProgress(){
   };
   
   // === UI CONTAINER SETUP ===
-  // Inject visibility UI into the progress card
+  // Inject visibility UI into the SKAI Analysis Progress card
   function ensureVisibilityUI() {
     // Check if already exists
     if (document.getElementById('skai-visibility-container')) {
       return;
     }
     
-    // Find or create the progress host area
-    var progressHost = document.getElementById('skaiProgressHost');
-    if (!progressHost) {
-      return; // Wait for progress system to initialize
+    // Find the SKAI Analysis Progress card
+    var progressCard = document.getElementById('skai-progress-indicator');
+    if (!progressCard) {
+      return; // Wait for progress card to be available
     }
     
     // Create visibility container
     var container = document.createElement('div');
     container.id = 'skai-visibility-container';
-    container.style.cssText = 'margin-top:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;';
+    container.style.cssText = 'margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;';
     
     // Layer 1: Status line
     var statusDiv = document.createElement('div');
@@ -11689,8 +11689,15 @@ function SKAI_requireProgress(){
       '.skai-visibility-summary-details li { margin:2px 0; color:#4b5563; }';
     document.head.appendChild(style);
     
-    // Insert after progress host
-    progressHost.parentNode.insertBefore(container, progressHost.nextSibling);
+    // Insert inside the progress card, after progress details
+    var progressDetails = document.getElementById('skai-progress-details');
+    if (progressDetails && progressDetails.parentNode === progressCard) {
+      // Insert after skai-progress-details
+      progressCard.insertBefore(container, progressDetails.nextSibling);
+    } else {
+      // Fallback: append to end of progress card
+      progressCard.appendChild(container);
+    }
   }
   
   // Initialize UI when progress system is ready
