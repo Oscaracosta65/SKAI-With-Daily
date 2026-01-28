@@ -1301,6 +1301,14 @@ $lotteryName   = (string)($config['lotteryName'] ?? '');
 $lotteryConfig = (array)($config['lotteryConfig'] ?? []);
 $lotteryConfig['lottery_id'] = $lotteryId; // make sure config exposes the real lottery_id
 
+// Auto-detect daily games: if loaded from dailylotteries.json (no master), mark as daily
+// This avoids needing to modify the JSON files themselves
+if (!$hasMaster && isset($dailyRow) && is_array($dailyRow)) {
+    $lotteryConfig['is_daily'] = true;  // Loaded from dailylotteries.json
+} elseif (!isset($lotteryConfig['is_daily'])) {
+    $lotteryConfig['is_daily'] = false; // Loaded from lottery_skip_config.json or default
+}
+
 // Guard: require a valid data
 
 // Guard: require a valid data table for this lottery
