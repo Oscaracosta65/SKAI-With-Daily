@@ -16,22 +16,40 @@
 
 You need to add the `is_daily` field to your lottery configuration JSON files:
 
-#### Location of JSON Files (from code)
-- Master config: `/home/oscara/web/lottoexpert.net/public_html/lottery_skip_config.json`
-- Daily games: `/home/oscara/web/lottoexpert.net/public_html/dailylotteries.json`
+#### Location of JSON Files (EXACT PATHS FROM CODE)
+These are the actual files being loaded by the SKAI module:
 
-#### What to Add
-
-**For Daily Digit Games** (Pick 1-5 with 0-9 domain):
-```json
-"is_daily": true
+**Master Config (Regular Lotteries):**
 ```
+/home/oscara/web/lottoexpert.net/public_html/lottery_skip_config.json
+```
+This file contains regular lotteries (Powerball, Mega Millions, state lotteries, etc.)
 
-**For Regular Lotteries** (all other games):
+**Daily Lotteries Catalog:**
+```
+/home/oscara/web/lottoexpert.net/public_html/dailylotteries.json
+```
+This file contains daily digit-based lotteries (Pick 1-5 games with 0-9 domain)
+
+#### What to Add to Each File
+
+**1. lottery_skip_config.json (Regular Lotteries)**
+Add to each lottery object:
 ```json
 "is_daily": false
 ```
 OR simply omit the field (defaults to false)
+
+These are traditional lotteries where you want to see **top 20 results pool**.
+
+**2. dailylotteries.json (Daily Games)**
+Add to each lottery object:
+```json
+"is_daily": true
+```
+These are digit-based games where you want to see **exact pick count** (e.g., Pick 3 shows 3 numbers).
+
+**IMPORTANT:** The `dailylotteries.json` file contains games that ARE daily digit games by definition, so ALL entries in that file should have `"is_daily": true`.
 
 ### Examples of Games to Update
 
