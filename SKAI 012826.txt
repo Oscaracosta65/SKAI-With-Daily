@@ -9299,7 +9299,8 @@ echo json_encode([
   'extraDomain'         => $__extraDomain,
   'hasExtraBall'        => (bool)$__hasExtra,
   'allowZero'           => (bool)$__allowZero,
-  'forceOneBasedExtra'  => (bool)$__forceOneBasedExtra
+  'forceOneBasedExtra'  => (bool)$__forceOneBasedExtra,
+  'isDaily'             => !empty($lotteryConfig['is_daily']) || !empty($lotteryConfig['isDaily'])
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 ?>;
 <?php echo '</script>'; ?>
@@ -10630,7 +10631,8 @@ window.SKAI_META = {
   // explicit extra diagnostics for UI logic
   extraHasHistory: <?php echo (!empty($fullExtraHistory) && is_array($fullExtraHistory) && count($fullExtraHistory) > 0) ? 'true' : 'false'; ?>,
   extraCols: <?php echo json_encode($extraBallCols, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-  extraLabel: <?php echo json_encode((string)($lotteryConfig['extra_ball_label'] ?? 'Extra Ball'), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+  extraLabel: <?php echo json_encode((string)($lotteryConfig['extra_ball_label'] ?? 'Extra Ball'), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+  isDaily: <?php echo (!empty($lotteryConfig['is_daily']) || !empty($lotteryConfig['isDaily'])) ? 'true' : 'false'; ?> // daily digit game flag from JSON config
 };
 
 // Client-side history arrays used by buildSkaiDataset()
@@ -24019,17 +24021,16 @@ if (!pickMain || pickMain < 1) { pickMain = 5; }
 var limit = (typeof window.SKAI_getTopLimit === 'function') ? window.SKAI_getTopLimit() : 20;
 if (!limit || limit < 1) { limit = 20; }
 
-// Detect daily digit games (domain 0-9, pick 1-4) vs regular lotteries (pick 5+)
-var domainMain = (meta && isFinite(+meta.domain) && +meta.domain > 0) ? (+meta.domain|0) : 99;
-var isDailyGame = (domainMain > 0 && domainMain <= 9 && pickMain >= 1 && pickMain <= 4);
-
-// Daily games (Pick 1-4): render exact pick size
-// Regular lotteries (Pick 5+): render top 20 results
+// Use JSON config to determine game type: daily digit games vs regular lotteries
+// Daily games (from JSON config with is_daily/isDaily flag): render exact pick size
+// Regular lotteries: render top 20 results
+var isDailyGame = !!(meta && meta.isDaily);
 var top = isDailyGame ? topAll.slice(0, pickMain) : topAll.slice(0, limit);
 
 // Extra balls: only render if the game actually has an extra ball
 var hasExtra = !!meta.hasExtraBall;
 var topX = (hasExtra ? topXAll.slice(0, 1) : []);
+
 
 syncTopLimitControls(limit);
 
