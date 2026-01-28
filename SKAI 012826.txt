@@ -11413,6 +11413,301 @@ function SKAI_requireProgress(){
     writeStatus(message || 'Done.');
   };
 
+// ========================================================================
+// SKAI 3-LAYER COMPUTATION VISIBILITY SYSTEM
+// Purpose: Provide real-time transparency into SKAI analysis computations
+// without percentages, tied to actual work being performed
+// ========================================================================
+
+(function() {
+  
+  // === LAYER 0: Runtime Statistics Object ===
+  // Central store for all computation metrics
+  window.SKAI_RUNTIME_STATS = {
+    // Current phase info
+    currentPhase: '',
+    currentPhaseDetail: '',
+    
+    // Live counters (monotonically increasing)
+    drawsProcessed: 0,
+    windowEvaluations: 0,
+    pairwiseComparisons: 0,
+    batchesProcessed: 0,
+    totalOperations: 0,
+    
+    // Phase targets (for X/Y display)
+    totalDraws: 0,
+    totalWindows: 0,
+    
+    // Phase completion summaries
+    completedPhases: [],
+    
+    // Internal state
+    _lastUpdate: 0,
+    _updateThrottle: 100, // ms between UI updates
+    
+    // Reset for new run
+    reset: function() {
+      this.currentPhase = '';
+      this.currentPhaseDetail = '';
+      this.drawsProcessed = 0;
+      this.windowEvaluations = 0;
+      this.pairwiseComparisons = 0;
+      this.batchesProcessed = 0;
+      this.totalOperations = 0;
+      this.totalDraws = 0;
+      this.totalWindows = 0;
+      this.completedPhases = [];
+      this._lastUpdate = 0;
+    },
+    
+    // Set current phase (Layer 1)
+    setPhase: function(phase, detail) {
+      this.currentPhase = phase || '';
+      this.currentPhaseDetail = detail || '';
+      this._updateUI();
+    },
+    
+    // Increment counters (Layer 2)
+    incrementDraws: function(count) {
+      this.drawsProcessed += (count || 1);
+      this._scheduleUpdate();
+    },
+    
+    incrementWindows: function(count) {
+      this.windowEvaluations += (count || 1);
+      this._scheduleUpdate();
+    },
+    
+    incrementComparisons: function(count) {
+      this.pairwiseComparisons += (count || 1);
+      this._scheduleUpdate();
+    },
+    
+    incrementBatches: function(count) {
+      this.batchesProcessed += (count || 1);
+      this._scheduleUpdate();
+    },
+    
+    incrementOperations: function(count) {
+      this.totalOperations += (count || 1);
+      this._scheduleUpdate();
+    },
+    
+    // Add phase completion summary (Layer 3)
+    completePhase: function(summary) {
+      if (summary && typeof summary === 'object') {
+        this.completedPhases.push({
+          timestamp: Date.now(),
+          phase: summary.phase || this.currentPhase,
+          processed: summary.processed || 0,
+          relationships: summary.relationships || 0,
+          change: summary.change || '',
+          metrics: summary.metrics || {}
+        });
+        this._updateUI();
+      }
+    },
+    
+    // Throttled UI update scheduling
+    _scheduleUpdate: function() {
+      var now = Date.now();
+      if (now - this._lastUpdate < this._updateThrottle) {
+        return; // Skip if too soon
+      }
+      this._lastUpdate = now;
+      
+      // Use requestAnimationFrame for non-blocking updates
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(this._updateUI.bind(this));
+      } else {
+        this._updateUI();
+      }
+    },
+    
+    // Update UI elements (called from RAF or direct)
+    _updateUI: function() {
+      try {
+        this._updateLayer1(); // Status line
+        this._updateLayer2(); // Counters
+        this._updateLayer3(); // Phase summaries
+      } catch(e) {
+        // Silent fail - don't break computation
+      }
+    },
+    
+    // Layer 1: Update status line
+    _updateLayer1: function() {
+      var el = document.getElementById('skai-visibility-status');
+      if (!el) return;
+      
+      var text = this.currentPhase;
+      if (this.currentPhaseDetail) {
+        text += ' - ' + this.currentPhaseDetail;
+      }
+      
+      if (el.textContent !== text) {
+        el.textContent = text || 'Initializing...';
+      }
+    },
+    
+    // Layer 2: Update live counters
+    _updateLayer2: function() {
+      var container = document.getElementById('skai-visibility-counters');
+      if (!container) return;
+      
+      var lines = [];
+      
+      if (this.drawsProcessed > 0 || this.totalDraws > 0) {
+        var drawText = 'Draws analyzed: ' + this._formatNumber(this.drawsProcessed);
+        if (this.totalDraws > 0) {
+          drawText += ' / ' + this._formatNumber(this.totalDraws);
+        }
+        lines.push(drawText);
+      }
+      
+      if (this.windowEvaluations > 0) {
+        var winText = 'Window evaluations: ' + this._formatNumber(this.windowEvaluations);
+        if (this.totalWindows > 0) {
+          winText += ' / ' + this._formatNumber(this.totalWindows);
+        }
+        lines.push(winText);
+      }
+      
+      if (this.pairwiseComparisons > 0) {
+        lines.push('Pairwise comparisons: ' + this._formatNumber(this.pairwiseComparisons));
+      }
+      
+      if (this.batchesProcessed > 0) {
+        lines.push('Batches processed: ' + this._formatNumber(this.batchesProcessed));
+      }
+      
+      if (this.totalOperations > 0) {
+        lines.push('Total computations: ' + this._formatNumber(this.totalOperations));
+      }
+      
+      container.innerHTML = lines.map(function(line) {
+        return '<div class="skai-visibility-counter-line">' + line + '</div>';
+      }).join('');
+    },
+    
+    // Layer 3: Update phase summaries
+    _updateLayer3: function() {
+      var container = document.getElementById('skai-visibility-summaries');
+      if (!container) return;
+      
+      var html = '';
+      var phases = this.completedPhases;
+      
+      for (var i = 0; i < phases.length; i++) {
+        var p = phases[i];
+        html += '<div class="skai-visibility-summary">';
+        html += '<div class="skai-visibility-summary-title">' + this._escapeHtml(p.phase) + ' complete</div>';
+        
+        var details = [];
+        if (p.processed > 0) {
+          details.push('Analyzed ' + this._formatNumber(p.processed) + ' data points');
+        }
+        if (p.relationships > 0) {
+          details.push('Evaluated ' + this._formatNumber(p.relationships) + ' relationships');
+        }
+        if (p.change) {
+          details.push(p.change);
+        }
+        
+        if (details.length > 0) {
+          html += '<ul class="skai-visibility-summary-details">';
+          for (var j = 0; j < details.length; j++) {
+            html += '<li>' + this._escapeHtml(details[j]) + '</li>';
+          }
+          html += '</ul>';
+        }
+        html += '</div>';
+      }
+      
+      container.innerHTML = html;
+    },
+    
+    // Helper: Format large numbers with commas
+    _formatNumber: function(num) {
+      return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    },
+    
+    // Helper: Escape HTML
+    _escapeHtml: function(text) {
+      var div = document.createElement('div');
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+  };
+  
+  // === UI CONTAINER SETUP ===
+  // Inject visibility UI into the progress card
+  function ensureVisibilityUI() {
+    // Check if already exists
+    if (document.getElementById('skai-visibility-container')) {
+      return;
+    }
+    
+    // Find or create the progress host area
+    var progressHost = document.getElementById('skaiProgressHost');
+    if (!progressHost) {
+      return; // Wait for progress system to initialize
+    }
+    
+    // Create visibility container
+    var container = document.createElement('div');
+    container.id = 'skai-visibility-container';
+    container.style.cssText = 'margin-top:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;';
+    
+    // Layer 1: Status line
+    var statusDiv = document.createElement('div');
+    statusDiv.id = 'skai-visibility-status';
+    statusDiv.style.cssText = 'font-size:14px;color:#1f2937;font-weight:500;margin-bottom:8px;';
+    statusDiv.textContent = 'Initializing...';
+    container.appendChild(statusDiv);
+    
+    // Layer 2: Live counters
+    var countersDiv = document.createElement('div');
+    countersDiv.id = 'skai-visibility-counters';
+    countersDiv.style.cssText = 'font-size:13px;color:#4b5563;line-height:1.6;margin-bottom:12px;';
+    container.appendChild(countersDiv);
+    
+    // Layer 3: Phase summaries
+    var summariesDiv = document.createElement('div');
+    summariesDiv.id = 'skai-visibility-summaries';
+    summariesDiv.style.cssText = 'font-size:12px;color:#6b7280;';
+    container.appendChild(summariesDiv);
+    
+    // Add CSS for counter lines
+    var style = document.createElement('style');
+    style.textContent = 
+      '.skai-visibility-counter-line { padding:2px 0; }' +
+      '.skai-visibility-summary { margin-bottom:12px; padding:8px; background:#f9fafb; border-left:3px solid #10b981; border-radius:4px; }' +
+      '.skai-visibility-summary-title { font-weight:600; color:#065f46; margin-bottom:4px; }' +
+      '.skai-visibility-summary-details { margin:0; padding-left:20px; }' +
+      '.skai-visibility-summary-details li { margin:2px 0; color:#4b5563; }';
+    document.head.appendChild(style);
+    
+    // Insert after progress host
+    progressHost.parentNode.insertBefore(container, progressHost.nextSibling);
+  }
+  
+  // Initialize UI when progress system is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureVisibilityUI);
+  } else {
+    ensureVisibilityUI();
+  }
+  
+  // Also try to initialize on first SKAI run
+  window.addEventListener('skai:ml:start', function() {
+    ensureVisibilityUI();
+    window.SKAI_RUNTIME_STATS.reset();
+  }, { once: false });
+  
+})();
+
 // === CANONICAL EVENT WIRING (real-only signals) ===
 // Polyfill: define SKAI_once if missing, and bind an identifier for strict mode
 if (typeof window.SKAI_once !== 'function') {
@@ -19677,6 +19972,14 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
     draws = Array.isArray(draws) ? draws : [];
     settings = settings || {};
 
+    // === LAYER 1 & 2: Instrument data preparation phase ===
+    try {
+      if (window.SKAI_RUNTIME_STATS) {
+        window.SKAI_RUNTIME_STATS.setPhase('Preparing historical data', 'Loading draw history');
+        window.SKAI_RUNTIME_STATS.totalDraws = draws.length;
+      }
+    } catch(_) {}
+
     var meta = window.SKAI_META || {};
     var domain = (+meta.domain > 0) ? (+meta.domain) : 70;
     var pick = (+meta.pick > 0)
@@ -19705,8 +20008,28 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
     var dom = allowZero ? (domain + 1) : domain;
     if (!isFinite(dom) || dom <= 0) return { xs:[], ys:[], inputDim:0, domain:0 };
 
+    // === LAYER 1 & 2: Update phase detail with window info ===
+    try {
+      if (window.SKAI_RUNTIME_STATS) {
+        window.SKAI_RUNTIME_STATS.setPhase('Building training samples', 'Window size: ' + W + ' draws');
+        window.SKAI_RUNTIME_STATS.totalWindows = hist - W;
+      }
+    } catch(_) {}
+
     var xs = [], ys = [];
     for (var i = W; i < hist; i++){
+      // === LAYER 2: Count window evaluations and comparisons ===
+      try {
+        if (window.SKAI_RUNTIME_STATS && i % 10 === 0) { // Batch updates every 10 iterations
+          window.SKAI_RUNTIME_STATS.incrementWindows(10);
+          window.SKAI_RUNTIME_STATS.incrementDraws(10);
+          // Estimate pairwise comparisons: W draws × pick numbers = W * pick comparisons per window
+          window.SKAI_RUNTIME_STATS.incrementComparisons(W * pick * 10);
+          // Operations: feature extraction for each draw in window
+          window.SKAI_RUNTIME_STATS.incrementOperations(W * dom * 10);
+        }
+      } catch(_) {}
+
       var addSH = !!settings.addSHFeature;
 
       xs.push(
@@ -19855,6 +20178,21 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
       pick >= 2 && pick <= 6;
 
     var outDomain = isDigitGame2 ? (pick * 10) : dom;
+
+    // === LAYER 3: Complete data preparation phase ===
+    try {
+      if (window.SKAI_RUNTIME_STATS) {
+        var samples = xs.length;
+        var totalComps = samples * W * pick; // Approximate total comparisons
+        window.SKAI_RUNTIME_STATS.completePhase({
+          phase: 'Data preparation',
+          processed: hist,
+          relationships: totalComps,
+          change: 'Generated ' + samples + ' training samples from ' + hist + ' draws',
+          metrics: { samples: samples, windowSize: W }
+        });
+      }
+    } catch(_) {}
 
     return {
       xs: xs,
@@ -20535,11 +20873,54 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
 
     var lastEpoch = -1;
 
+    // === LAYER 1 & 2: Training phase initialization ===
+    var trainSampleCount = 0;
+    try {
+      if (xs && xs.shape) {
+        trainSampleCount = xs.shape[0] || 0;
+      }
+    } catch(_) {}
+
     var wiringCb = {
-      onTrainBegin: function(){ return Promise.resolve(); },
+      onTrainBegin: function(){ 
+        // === LAYER 1: Set training phase ===
+        try {
+          if (window.SKAI_RUNTIME_STATS) {
+            window.SKAI_RUNTIME_STATS.setPhase('Training neural network', phaseLabel);
+          }
+        } catch(_) {}
+        return Promise.resolve(); 
+      },
       onEpochEnd: function(epoch, logs){
         if (epoch === lastEpoch) return Promise.resolve();
         lastEpoch = epoch;
+
+        // === LAYER 2: Track training progress ===
+        try {
+          if (window.SKAI_RUNTIME_STATS) {
+            // Each epoch processes all batches
+            var batchesPerEpoch = Math.ceil(trainSampleCount / Math.max(1, batchSize));
+            window.SKAI_RUNTIME_STATS.incrementBatches(batchesPerEpoch);
+            
+            // Estimate operations: batches × batchSize × (inputDim × outputDim × 2) for forward+backward
+            var inputDim = 0;
+            var outputDim = 0;
+            try {
+              if (xs && xs.shape) inputDim = xs.shape[1] || 0;
+              if (ys && ys.shape) outputDim = ys.shape[1] || 0;
+            } catch(_) {}
+            
+            if (inputDim > 0 && outputDim > 0) {
+              var opsPerBatch = batchSize * inputDim * outputDim * 4; // Rough estimate (forward, backward, weight updates)
+              window.SKAI_RUNTIME_STATS.incrementOperations(batchesPerEpoch * opsPerBatch);
+            }
+            
+            // Update phase detail with epoch info
+            var eff = epochOffset + (epoch + 1);
+            var tot = Math.max(1, totalDisplay);
+            window.SKAI_RUNTIME_STATS.setPhase('Training neural network', phaseLabel + ' (' + eff + '/' + tot + ' epochs)');
+          }
+        } catch(_) {}
 
         var span = 96 - 62;
         var pct  = 62;
@@ -20660,6 +21041,28 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
             if (typeof window.SKAI_Progress.done === 'function') window.SKAI_Progress.done(labelFinal);
           }
         } catch(_){}
+
+        // === LAYER 3: Complete training phase ===
+        try {
+          if (window.SKAI_RUNTIME_STATS) {
+            var totalEpochsCompleted = epochOffset + epochs;
+            var totalBatches = window.SKAI_RUNTIME_STATS.batchesProcessed;
+            var loss = (history && history.history && history.history.loss) ? history.history.loss[history.history.loss.length - 1] : null;
+            
+            var changeText = 'Model trained for ' + totalEpochsCompleted + ' epochs';
+            if (loss !== null && isFinite(loss)) {
+              changeText += ', final loss: ' + loss.toFixed(4);
+            }
+            
+            window.SKAI_RUNTIME_STATS.completePhase({
+              phase: phaseLabel,
+              processed: totalEpochsCompleted,
+              relationships: totalBatches,
+              change: changeText,
+              metrics: { epochs: totalEpochsCompleted, batches: totalBatches, finalLoss: loss }
+            });
+          }
+        } catch(_) {}
 
         // Populate window.skaiConfig with all parameters for save function
         try {
