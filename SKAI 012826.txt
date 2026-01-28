@@ -26285,18 +26285,8 @@ window.addEventListener('skai:render:done', function(){
     // If meta is missing, infer from common daily rule: presence of digits 0-9 in top list
     var top = (window.SKAI_TOP_MAIN && window.SKAI_TOP_MAIN.length) ? window.SKAI_TOP_MAIN : [];
 
-    // Gate: daily only
-    var isDaily = false;
-    if (isFinite(mainMax)) {
-      isDaily = (mainMax <= 9);
-    } else if (top && top.length) {
-      // infer: if nums are all 0..9, treat as daily
-      isDaily = true;
-      for (var i0=0; i0<top.length; i0++){
-        var n0 = +top[i0].num;
-        if (!isFinite(n0) || n0 < 0 || n0 > 9) { isDaily = false; break; }
-      }
-    }
+    // Gate: daily only - use meta.isDaily flag from config (consistent with rendering logic)
+    var isDaily = !!(meta && meta.isDaily);
 
     var panel = document.getElementById('skai-daily-panel');
     if (!panel) return;
