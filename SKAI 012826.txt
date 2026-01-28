@@ -11370,22 +11370,38 @@ function SKAI_requireProgress(){
     var bar = document.getElementById('skaiProgress');
     if (bar) bar.style.width = String(Math.round(p * 100)) + '%';
 
-    // === NO PERCENTAGE DISPLAY ===
-    // Per requirements: "without using percentages" - we keep the visual bar
-    // but don't show percentage text. The 3-layer visibility system shows
-    // real computation metrics instead.
-    
-    // Original ETA code removed - we show real work metrics instead
-    // (See SKAI_RUNTIME_STATS layers for actual computation visibility)
+    // --- Section B-01: ETA computation and display ---
+    try {
+      // Use the same start timestamp as SKAI_Progress.start
+      var now = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now();
 
-    // Only show message if provided, without percentage or ETA text
-    if (message){ 
-      // Strip any percentage or ETA text from message
-      message = String(message).replace(/\d+%/g, '').replace(/\s*\(ETA[^)]*\)\s*$/i, '').trim();
-      if (message) {
-        writeStatus(message); 
+      var t0 = _t0 || window.__SKAI_T0__ || now;
+      var elapsedMs = now - t0;
+
+      // Only compute ETA once we have some progress and a bit of time has passed
+      if (p > 0 && elapsedMs > 500) {
+        var elapsedSec = elapsedMs / 1000;
+        var totalSec = elapsedSec / p;
+        var remainingSec = Math.max(0, totalSec - elapsedSec);
+
+        // formatEta is the existing helper that returns "Xm Ys" or "n/a"
+        var etaText = formatEta(remainingSec);
+        __lastEta = etaText;
+
+        if (message) {
+          // Strip any previous "(ETA ...)" suffix to avoid duplication
+          message = String(message).replace(/\s*\(ETA[^)]*\)\s*$/i, '');
+          message += ' (ETA ' + etaText + ')';
+        }
       }
+    } catch (_) {
+      // If anything goes wrong with ETA, just fall back to the plain message
     }
+    // --- end Section B-01 ETA wiring ---
+
+    if (message){ writeStatus(message); }
   };
 
   window.SKAI_Progress.done = function(message){
@@ -20913,10 +20929,7 @@ if (live0) live0.textContent = 'Nothing to copy yet - run AI first.';
         try { pct = 62 + Math.floor(eff * (span / tot)); } catch(_){}
 
         try {
-          // === NO PERCENTAGE-STYLE MESSAGES ===
-          // Let the 3-layer visibility system show actual computation metrics
-          // Don't show "Training X/Y" format - that's handled by Layer 1 visibility
-          var labelNow = 'Training in progress';
+          var labelNow = 'Training ' + String(eff) + '/' + String(tot) + '...';
           if (typeof window.ensureProgressAPI === 'function') {
             var P1 = window.ensureProgressAPI();
             if (P1 && typeof P1.set === 'function') P1.set(pct, labelNow);
