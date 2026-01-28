@@ -108,3 +108,32 @@ The existing separation of lotteries into `dailylotteries.json` and `lottery_ski
 - **COMPLETE_GUIDE.md** - This file (implementation overview)
 - **SUMMARY.md** - Technical details of changes
 - **README.md** - Repository navigation
+
+---
+
+## 🐛 Bug Fix: Fantasy 5 and Regular Lotteries (Jan 28, 2026)
+
+### Issue
+All regular lotteries (Fantasy 5, Powerball, Mega Millions, etc.) were:
+- Showing only pick count instead of top 20 results
+- Incorrectly displaying Daily Decision Panel
+
+### Root Cause
+The daily panel logic was using old heuristic `mainMax <= 9` instead of `meta.isDaily` flag, causing inconsistent detection.
+
+### Fix Applied
+Updated line 26289 to use `meta.isDaily` flag (consistent with rendering logic line 24035):
+```javascript
+// Before (heuristic):
+var isDaily = (mainMax <= 9);
+
+// After (config-based):
+var isDaily = !!(meta && meta.isDaily);
+```
+
+### Result
+✅ All regular lotteries now show top 20 results  
+✅ Daily panel only appears for games from dailylotteries.json  
+✅ System is fully consistent across all detection points  
+
+**Commit:** 44716d4
